@@ -1,0 +1,30 @@
+# Secrets — never commit
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Django
+staticfiles/
+media/
+logs/*.log
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Tooling
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db

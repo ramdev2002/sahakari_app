@@ -11,35 +11,41 @@ class User(AbstractUser):
     """
     Custom User model for the Sahakari cooperative management system.
 
-    Uses email as the login identifier. Roles, departments and authorization
-    are managed through Django's built-in Group and Permission system (RBAC)
-    rather than hardcoded fields on the User model.
-    Supports soft delete for audit trail compliance.
+    Uses email as the login identifier. Role (RBAC) is a single Group lookup
+    plus Django's built-in permissions. Supports soft delete for audit trails.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    first_name = models.CharField(max_length=50)
-    last_name = models.CharField(max_length=50)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(
+        unique=True,
+        null=False,
+        blank=False,
+        error_messages={'unique': 'A user with this email already exists.'},
+    )
+    role = models.ForeignKey(
+        'auth.Group',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='users',
+        help_text='Role of the user for access control.',
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=[('active', 'Active'), ('inactive', 'Inactive')],
+        default='active',
+        help_text='Status of the user account.',
+    )
     # Soft delete fields
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'last_name']
-
+    REQUIRED_FIELDS = []
     objects = CustomUserManager()
 
-    class Meta:
-        verbose_name = 'user'
-        verbose_name_plural = 'users'
-        db_table = 'users'
-        ordering = ['-date_joined']
 
     def __str__(self):
         return self.email
-
-    def get_full_name(self):
-        return f'{self.first_name} {self.last_name}'.strip()
 
     def soft_delete(self):
         """Mark user as deleted without removing from database."""

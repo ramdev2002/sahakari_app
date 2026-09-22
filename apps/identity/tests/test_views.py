@@ -5,8 +5,8 @@ from rest_framework import status
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.users.models import User
-from apps.users.permissions import GROUP_ADMINISTRATIVE_OFFICER
+from apps.identity.models import User
+from apps.core.constants import GROUP_ADMINISTRATIVE_OFFICER
 
 
 def get_tokens_for_user(user):
@@ -102,6 +102,24 @@ class UserCreateTests(TestCase):
         res = self.client.post(self.url, self.valid_data, format='json')
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
 
+    def test_create_user_with_role_and_status(self):
+        role = Group.objects.create(name='Manager')
+        res = self.client.post(self.url, {
+            'email': 'manager@example.com',
+            'password': 'SecurePass123!',
+            'first_name': 'Sam',
+            'last_name': 'Sundar',
+            'role_id': role.pk,
+            'status': 'inactive',
+        }, format='json')
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.data['role_id'], role.pk)
+        self.assertEqual(res.data['role'], 'Manager')
+        self.assertEqual(res.data['status'], 'inactive')
+        user = User.objects.get(email='manager@example.com')
+        self.assertEqual(user.role, role)
+        self.assertEqual(user.status, 'inactive')
+
 
 class UserReadTests(TestCase):
     def setUp(self):
@@ -140,6 +158,17 @@ class UserReadTests(TestCase):
         res = self.client.get(reverse('user-list'), {'search': 'test'})
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data['results']), 1)
+
+    def test_retrieve_user_role_and_status(self):
+        role = Group.objects.create(name='Manager')
+        self.user.role = role
+        self.user.status = 'inactive'
+        self.user.save()
+        res = self.client.get(self.user_url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['role_id'], role.pk)
+        self.assertEqual(res.data['role'], 'Manager')
+        self.assertEqual(res.data['status'], 'inactive')
 
     def test_ordering_users(self):
         res = self.client.get(reverse('user-list'), {'ordering': 'first_name'})

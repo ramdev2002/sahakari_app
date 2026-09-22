@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.test import TestCase
 
-from apps.users.permissions import GROUP_ADMINISTRATIVE_OFFICER
+from apps.core.constants import GROUP_ADMINISTRATIVE_OFFICER
 
 User = get_user_model()
 

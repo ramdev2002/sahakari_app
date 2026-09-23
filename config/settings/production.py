@@ -9,9 +9,7 @@ SECRET_KEY = env('DJANGO_SECRET_KEY')
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 if not ALLOWED_HOSTS:
-    raise ImproperlyConfigured(
-        'ALLOWED_HOSTS must be set in production via DJANGO_ALLOWED_HOSTS.'
-    )
+    raise ImproperlyConfigured('ALLOWED_HOSTS must be set in production via DJANGO_ALLOWED_HOSTS.')
 
 CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
 
@@ -36,3 +34,8 @@ X_FRAME_OPTIONS = 'DENY'
 # Serve static files through the web server (nginx/caddy) in production.
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
+
+# WhiteNoise serves compressed, fingerprinted static assets from the app process.
+MIDDLEWARE.insert(2, 'whitenoise.middleware.WhiteNoiseMiddleware')
+STATIC_ROOT = env('STATIC_ROOT', default=str(BASE_DIR / 'staticfiles'))
+STORAGES = {'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'}}

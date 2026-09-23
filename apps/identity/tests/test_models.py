@@ -1,20 +1,15 @@
 import uuid
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
 from django.test import TestCase
 
-from apps.core.constants import GROUP_ADMINISTRATIVE_OFFICER
-
 User = get_user_model()
+
 
 class UserModelTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            email='test@example.com',
-            password='testpass123',
-            first_name='Test',
-            last_name='User',
+            email='test@example.com', password='testpass123', first_name='Test', last_name='User'
         )
 
     def test_create_user(self):
@@ -40,21 +35,17 @@ class UserModelTest(TestCase):
 
     def test_create_superuser(self):
         admin = User.objects.create_superuser(
-            email='admin@example.com',
-            password='adminpass123',
-            first_name='Admin',
-            last_name='User',
+            email='admin@example.com', password='adminpass123', first_name='Admin', last_name='User'
         )
         self.assertTrue(admin.is_superuser)
         self.assertTrue(admin.is_staff)
 
     def test_duplicate_email_raises(self):
-        with self.assertRaises(Exception):
+        from django.db import IntegrityError
+
+        with self.assertRaises(IntegrityError):
             User.objects.create_user(
-                email='test@example.com',
-                password='anotherpass',
-                first_name='Dup',
-                last_name='User',
+                email='test@example.com', password='anotherpass', first_name='Dup', last_name='User'
             )
 
     def test_soft_delete(self):

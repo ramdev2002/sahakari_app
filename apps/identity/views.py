@@ -20,6 +20,7 @@ class UserViewSet(viewsets.ModelViewSet):
         DELETE /api/users/{id}/  -> Soft delete (admin/officer only)
         GET    /api/users/me/    -> Current user profile
     """
+
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
     search_fields = ['email', 'first_name', 'last_name', 'role__name', 'status']

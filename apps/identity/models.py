@@ -2,18 +2,21 @@ import uuid
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.utils import timezone
+
+from apps.core.constants import STATUS_CHOICES
+from apps.core.models import SoftDeleteModel, soft_delete_state_constraint
 
 from .managers import CustomUserManager
 
 
-class User(AbstractUser):
+class User(AbstractUser, SoftDeleteModel):
     """
     Custom User model for the Sahakari cooperative management system.
 
     Uses email as the login identifier. Role (RBAC) is a single Group lookup
     plus Django's built-in permissions. Supports soft delete for audit trails.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(
         unique=True,
@@ -31,25 +34,26 @@ class User(AbstractUser):
     )
     status = models.CharField(
         max_length=20,
-        choices=[('active', 'Active'), ('inactive', 'Inactive')],
+        choices=STATUS_CHOICES,
         default='active',
+        db_index=True,
         help_text='Status of the user account.',
     )
-    # Soft delete fields
-    is_deleted = models.BooleanField(default=False)
-    deleted_at = models.DateTimeField(null=True, blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
     objects = CustomUserManager()
 
+    class Meta:
+        verbose_name = 'user'
+        verbose_name_plural = 'users'
+        constraints = [soft_delete_state_constraint()]
 
     def __str__(self):
         return self.email
 
     def soft_delete(self):
-        """Mark user as deleted without removing from database."""
-        self.is_deleted = True
-        self.deleted_at = timezone.now()
+        """Soft delete and deactivate the account (blocks future logins)."""
+        super().soft_delete()
         self.is_active = False
-        self.save(update_fields=['is_deleted', 'deleted_at', 'is_active'])
+        self.save(update_fields=['is_active'])

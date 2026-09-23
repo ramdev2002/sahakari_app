@@ -12,11 +12,14 @@ class IsSuperUser(BasePermission):
     """Allow access only to superusers (Django's is_superuser flag)."""
 
     def has_permission(self, request, view):
-        return (
-            request.user
-            and request.user.is_authenticated
-            and request.user.is_superuser
-        )
+        return request.user and request.user.is_authenticated and request.user.is_superuser
+
+
+class IsStaffUser(BasePermission):
+    """Allow access to any authenticated staff user (is_staff)."""
+
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated and request.user.is_staff
 
 
 class IsAdministrativeOfficer(BasePermission):
@@ -25,10 +28,7 @@ class IsAdministrativeOfficer(BasePermission):
     def has_permission(self, request, view):
         if not (request.user and request.user.is_authenticated):
             return False
-        return (
-            request.user.is_superuser
-            or _is_in_group(request.user, GROUP_ADMINISTRATIVE_OFFICER)
-        )
+        return request.user.is_superuser or _is_in_group(request.user, GROUP_ADMINISTRATIVE_OFFICER)
 
 
 class IsSuperUserOrAdministrativeOfficer(IsAdministrativeOfficer):

@@ -17,10 +17,7 @@ def custom_exception_handler(exc, context):
     if response is not None:
         # Normalise DRF errors into a stable {"detail": ...} top-level shape
         # so clients can parse failures uniformly across endpoints.
-        data = {
-            'detail': response.data.get('detail', 'Request failed.'),
-            'errors': response.data,
-        }
+        data = {'detail': response.data.get('detail', 'Request failed.'), 'errors': response.data}
         return Response(data, status=response.status_code)
 
     # Unhandled exception -> log the full traceback, then return a generic
@@ -36,6 +33,5 @@ def custom_exception_handler(exc, context):
         detail = f'{exc.__class__.__name__}: {exc}'
 
     return Response(
-        {'detail': detail, 'errors': None},
-        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        {'detail': detail, 'errors': None}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
     )

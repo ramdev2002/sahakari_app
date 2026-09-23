@@ -2,3 +2,5 @@
 pytest-django>=4.9
 flake8>=7.0
 black>=24.0
+ruff>=0.6
+ipython>=8.0

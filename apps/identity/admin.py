@@ -9,8 +9,15 @@ class UserAdmin(BaseUserAdmin):
     model = User
 
     list_display = [
-        'email', 'role', 'status', 'first_name', 'last_name',
-        'is_active', 'is_staff', 'is_superuser', 'is_deleted',
+        'email',
+        'role',
+        'status',
+        'first_name',
+        'last_name',
+        'is_active',
+        'is_staff',
+        'is_superuser',
+        'is_deleted',
     ]
     list_filter = ['status', 'role', 'is_active', 'is_staff', 'is_superuser', 'is_deleted']
     search_fields = ['email', 'first_name', 'last_name']

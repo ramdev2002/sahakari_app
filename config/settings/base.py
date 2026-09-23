@@ -1,5 +1,4 @@
 from datetime import timedelta
-from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -39,8 +38,21 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'drf_spectacular',
     # Local apps
+    'apps.core',
     'apps.identity',
+    'apps.members',
+    'apps.organization',
+    'apps.accounts',
+    'apps.ledger',
+    'apps.transactions',
+    'apps.savings',
+    'apps.audit',
+    'apps.loans',
+    'apps.approvals',
+    'apps.notifications',
+    'apps.reports',
 ]
 
 MIDDLEWARE = [
@@ -53,6 +65,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'config.middleware.SecurityHeadersMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -67,9 +80,9 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-            ],
+            ]
         },
-    },
+    }
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
@@ -80,10 +93,10 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': env.db(
         'DATABASE_URL',
-        default=f"postgres://{env('DB_USER', default='postgres')}:"
-        f"{env('DB_PASSWORD', default='')}@{env('DB_HOST', default='localhost')}:"
-        f"{env('DB_PORT', default='5432')}/{env('DB_NAME', default='sahakari')}",
-    ),
+        default=f'postgres://{env("DB_USER", default="postgres")}:'
+        f'{env("DB_PASSWORD", default="")}@{env("DB_HOST", default="localhost")}:'
+        f'{env("DB_PORT", default="5432")}/{env("DB_NAME", default="sahakari")}',
+    )
 }
 
 # ---------------------------------------------------------------------------
@@ -125,6 +138,10 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# Uploaded files (member photos, etc.)
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ---------------------------------------------------------------------------
@@ -134,9 +151,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
+    'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.IsAuthenticated',),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_FILTER_BACKENDS': (
@@ -147,12 +162,21 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle',
     ),
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/hour',
-        'user': '1000/day',
-    },
+    'DEFAULT_THROTTLE_RATES': {'anon': '100/hour', 'user': '1000/day'},
     'EXCEPTION_HANDLER': 'config.exceptions.custom_exception_handler',
     'UNAUTHENTICATED_USER': 'django.contrib.auth.models.AnonymousUser',
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Sahakari Cooperative API',
+    'DESCRIPTION': (
+        'Double-entry cooperative management system: members, savings, '
+        'transactions, ledger, loans, approvals, notifications, reports.'
+    ),
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
 }
 
 # ---------------------------------------------------------------------------
@@ -180,26 +204,12 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
-        'verbose': {
-            'format': '[{asctime}] {levelname} {name} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
+        'verbose': {'format': '[{asctime}] {levelname} {name} {message}', 'style': '{'},
+        'simple': {'format': '{levelname} {message}', 'style': '{'},
     },
-    'filters': {
-        'require_debug_true': {
-            '()': 'django.utils.log.RequireDebugTrue',
-        },
-    },
+    'filters': {'require_debug_true': {'()': 'django.utils.log.RequireDebugTrue'}},
     'handlers': {
-        'console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
-        },
+        'console': {'level': 'INFO', 'class': 'logging.StreamHandler', 'formatter': 'simple'},
         'file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
@@ -209,20 +219,9 @@ LOGGING = {
             'formatter': 'verbose',
         },
     },
-    'root': {
-        'handlers': ['console', 'file'],
-        'level': 'INFO',
-    },
+    'root': {'handlers': ['console', 'file'], 'level': 'INFO'},
     'loggers': {
-        'django': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'apps': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
+        'django': {'handlers': ['console', 'file'], 'level': 'INFO', 'propagate': False},
+        'apps': {'handlers': ['console', 'file'], 'level': 'DEBUG', 'propagate': False},
     },
 }

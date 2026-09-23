@@ -8,11 +8,7 @@ def get_active_users():
 
 def get_user_by_id(user_id):
     """Return a single non-deleted user with its role, or None."""
-    return (
-        User.objects.select_related('role')
-        .filter(pk=user_id)
-        .first()
-    )
+    return User.objects.select_related('role').filter(pk=user_id).first()
 
 
 def delete_user(user):

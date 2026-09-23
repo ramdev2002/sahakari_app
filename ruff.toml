@@ -1,0 +1,17 @@
+line-length = 100
+target-version = "py313"
+
+[lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[lint.per-file-ignores]
+"*/migrations/*" = ["E501"]
+"apps/*/tests/*" = ["E501"]
+"config/settings/*" = ["F403", "F405"]
+
+[format]
+skip-magic-trailing-comma = true
+quote-style = "single"
+
+[lint.isort]
+split-on-trailing-comma = false

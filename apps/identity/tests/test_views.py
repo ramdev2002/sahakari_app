@@ -121,6 +121,11 @@ class UserReadTests(TestCase):
         self.user = User.objects.create_user(
             email='test@example.com', password='testpass123', first_name='Test', last_name='User'
         )
+        # Grant Account Officer role to allow user list (retrieve of self works via owner fallback)
+        from django.contrib.auth.models import Group
+
+        account_officer, _ = Group.objects.get_or_create(name='Account Officer')
+        self.user.groups.add(account_officer)
         self.tokens = get_tokens_for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.tokens["access"]}')
         self.user_url = reverse('user-detail', kwargs={'pk': self.user.pk})
@@ -173,6 +178,28 @@ class UserReadTests(TestCase):
         res = self.client.get(reverse('user-me'))
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data['email'], 'test@example.com')
+
+    def test_me_endpoint_exposes_capabilities(self):
+        res = self.client.get(reverse('user-me'))
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('capabilities', res.data)
+        caps = res.data['capabilities']
+        self.assertIn('members.manage', caps)
+        self.assertIn('transactions.deposit', caps)
+        self.assertNotIn('loans.approve', caps)
+
+    def test_me_endpoint_superuser_gets_all_capabilities(self):
+        from django.contrib.auth.models import Group
+
+        admin, _ = Group.objects.get_or_create(name='System Administrator')
+        admin_user = User.objects.create_superuser(email='root@example.com', password='testpass123')
+        admin_user.groups.add(admin)
+        admin_tokens = get_tokens_for_user(admin_user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {admin_tokens["access"]}')
+        res = self.client.get(reverse('user-me'))
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('users.manage', res.data['capabilities'])
+        self.assertIn('loans.approve', res.data['capabilities'])
 
     def test_me_unauthenticated(self):
         self.client.credentials()

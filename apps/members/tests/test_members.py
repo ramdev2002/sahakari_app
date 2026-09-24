@@ -66,6 +66,11 @@ class MemberReadTests(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create_user(email='view@example.com', password='pass123')
+        # Grant Account Officer role to allow member list/retrieve
+        from django.contrib.auth.models import Group
+
+        account_officer, _ = Group.objects.get_or_create(name='Account Officer')
+        self.user.groups.add(account_officer)
         self.tokens = get_tokens_for_user(self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.tokens["access"]}')
         self.member = Member.objects.create(first_name='Sita', last_name='Rai', phone='9811111111')

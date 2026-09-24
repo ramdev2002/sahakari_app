@@ -1,9 +1,12 @@
+from django.contrib.auth.models import Group
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .permissions import IsOwnerOrSuperUser, IsSuperUserOrAdministrativeOfficer
+from apps.core.rbac import ALL_ROLE_GROUPS
+
+from .permissions import CanManageOrOwnUser, CanManageUsers, CanViewOrSelfUser, CanViewUsers
 from .serializers import UserSerializer
 from .services import delete_user, get_active_users
 
@@ -30,16 +33,28 @@ class UserViewSet(viewsets.ModelViewSet):
         return get_active_users()
 
     def get_permissions(self):
+        if self.action == 'me' or self.action == 'roles':
+            return [IsAuthenticated()]
         if self.action in ('create', 'destroy'):
-            return [IsAuthenticated(), IsSuperUserOrAdministrativeOfficer()]
+            return [IsAuthenticated(), CanManageUsers()]
         if self.action in ('update', 'partial_update'):
-            return [IsAuthenticated(), IsOwnerOrSuperUser()]
-        return [IsAuthenticated()]
+            return [IsAuthenticated(), CanManageOrOwnUser()]
+        if self.action == 'list':
+            return [IsAuthenticated(), CanViewUsers()]
+        return [IsAuthenticated(), CanViewOrSelfUser()]
 
     def perform_destroy(self, instance):
         delete_user(instance)
 
     @action(detail=False, methods=['get'])
     def me(self, request):
-        serializer = self.get_serializer(request.user)
+        serializer = self.get_serializer(
+            request.user, context={**self.get_serializer_context(), 'include_capabilities': True}
+        )
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def roles(self, request):
+        """Available RBAC roles for assignment (id + name)."""
+        groups = Group.objects.filter(name__in=ALL_ROLE_GROUPS).order_by('name')
+        return Response([{'id': group.pk, 'name': group.name} for group in groups])

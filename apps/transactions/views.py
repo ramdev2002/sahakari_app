@@ -5,6 +5,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
+from apps.core.permissions import (
+    CanDeposit,
+    CanReverse,
+    CanTransfer,
+    CanViewTransactions,
+    CanWithdraw,
+)
+
 from . import services
 from .models import Transaction
 from .serializers import (
@@ -38,6 +46,16 @@ class TransactionViewSet(ReadOnlyModelViewSet):
         if branch:
             queryset = queryset.filter(branch_id=branch)
         return queryset
+
+    def get_permissions(self):
+        action_permissions = {
+            'deposit': CanDeposit,
+            'withdraw': CanWithdraw,
+            'transfer': CanTransfer,
+            'reverse': CanReverse,
+        }
+        permission_cls = action_permissions.get(self.action, CanViewTransactions)
+        return [IsAuthenticated(), permission_cls()]
 
     @classmethod
     def service_kwargs(cls, serializer_data, request):

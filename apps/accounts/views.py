@@ -1,7 +1,7 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
-from apps.identity.permissions import IsSuperUserOrAdministrativeOfficer
+from apps.core.permissions import CanManageAccounts
 
 from .models import Account, AccountBalance, AccountType
 from .serializers import AccountBalanceSerializer, AccountSerializer, AccountTypeSerializer
@@ -35,7 +35,7 @@ class AccountViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ('create', 'update', 'partial_update', 'destroy'):
-            return [IsAuthenticated(), IsSuperUserOrAdministrativeOfficer()]
+            return [IsAuthenticated(), CanManageAccounts()]
         return [IsAuthenticated()]
 
     def perform_destroy(self, instance):

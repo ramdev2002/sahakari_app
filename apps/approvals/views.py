@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
-from apps.identity.permissions import IsStaffUser, IsSuperUserOrAdministrativeOfficer
+from apps.core.permissions import CanDecideApprovals, CanManageApprovals, CanViewApprovals
 
 from . import services
 from .models import ApprovalRequest, ApprovalRule
@@ -18,7 +18,7 @@ from .serializers import (
 
 
 class ApprovalRequestViewSet(GenericViewSet):
-    permission_classes = [IsAuthenticated, IsStaffUser]
+    permission_classes = [IsAuthenticated, CanViewApprovals]
     serializer_class = ApprovalRequestSerializer
 
     def get_queryset(self):
@@ -32,6 +32,11 @@ class ApprovalRequestViewSet(GenericViewSet):
         if entity_type:
             queryset = queryset.filter(entity_type=entity_type)
         return queryset
+
+    def get_permissions(self):
+        if self.action == 'decide':
+            return [IsAuthenticated(), CanDecideApprovals()]
+        return [IsAuthenticated(), CanViewApprovals()]
 
     def list(self, request):
         queryset = self.filter_queryset(self.get_queryset())
@@ -78,7 +83,7 @@ class ApprovalRequestViewSet(GenericViewSet):
 
 
 class ApprovalRuleViewSet(ModelViewSet):
-    permission_classes = [IsAuthenticated, IsSuperUserOrAdministrativeOfficer]
+    permission_classes = [IsAuthenticated, CanManageApprovals]
     serializer_class = ApprovalRuleSerializer
 
     def get_queryset(self):

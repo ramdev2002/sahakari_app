@@ -2,7 +2,7 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from apps.core.constants import GROUP_ADMINISTRATIVE_OFFICER
+from apps.core.rbac import MANAGE_USERS, capabilities_for, has_capability
 
 from .models import User
 from .services import email_exists
@@ -19,6 +19,8 @@ class UserSerializer(serializers.ModelSerializer):
     )
     role = serializers.SerializerMethodField()
     full_name = serializers.SerializerMethodField()
+    capabilities = serializers.SerializerMethodField()
+    is_superuser = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = User
@@ -31,6 +33,8 @@ class UserSerializer(serializers.ModelSerializer):
             'full_name',
             'role_id',
             'role',
+            'capabilities',
+            'is_superuser',
             'status',
             'is_active',
             'is_deleted',
@@ -56,6 +60,11 @@ class UserSerializer(serializers.ModelSerializer):
     def get_full_name(self, obj):
         return obj.get_full_name()
 
+    def get_capabilities(self, obj):
+        if not self.context.get('include_capabilities'):
+            return []
+        return sorted(capabilities_for(obj))
+
     def validate_email(self, value):
         if email_exists(value):
             raise serializers.ValidationError('A user with this email already exists.')
@@ -71,11 +80,9 @@ class UserSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         request = self.context.get('request')
         actor = getattr(request, 'user', None)
-        can_manage_role = actor and (
-            actor.is_superuser or actor.groups.filter(name=GROUP_ADMINISTRATIVE_OFFICER).exists()
-        )
+        can_manage_role = actor is not None and has_capability(actor, MANAGE_USERS)
         if 'role' in validated_data and not can_manage_role:
-            raise serializers.ValidationError({'role_id': 'Only superusers can change roles.'})
+            raise serializers.ValidationError({'role_id': 'Only administrators can change roles.'})
         password = validated_data.pop('password', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

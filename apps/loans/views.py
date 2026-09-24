@@ -5,7 +5,16 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
-from apps.identity.permissions import IsSuperUserOrAdministrativeOfficer
+from apps.core.permissions import (
+    CanApproveLoans,
+    CanCancelLoans,
+    CanCreateLoans,
+    CanDisburseLoans,
+    CanManageProducts,
+    CanRepayLoans,
+    CanViewLoans,
+)
+from apps.core.rbac import VIEW_LOANS, VIEW_OWN_LOANS, has_capability
 from apps.members.models import Member
 
 from . import services
@@ -28,7 +37,7 @@ class LoanProductViewSet(ModelViewSet):
 
     def get_permissions(self):
         if self.action in ('create', 'update', 'partial_update', 'destroy'):
-            return [IsAuthenticated(), IsSuperUserOrAdministrativeOfficer()]
+            return [IsAuthenticated(), CanManageProducts()]
         return [IsAuthenticated()]
 
     def perform_destroy(self, instance):
@@ -44,6 +53,14 @@ class LoanViewSet(GenericViewSet):
         queryset = Loan.objects.select_related('member', 'product', 'savings_account').order_by(
             '-created_at'
         )
+        user = self.request.user
+        if (
+            user.is_authenticated
+            and not user.is_superuser
+            and has_capability(user, VIEW_OWN_LOANS)
+            and not has_capability(user, VIEW_LOANS)
+        ):
+            queryset = queryset.filter(member__user=user)
         status = self.request.query_params.get('status')
         member = self.request.query_params.get('member')
         if status:
@@ -51,6 +68,17 @@ class LoanViewSet(GenericViewSet):
         if member:
             queryset = queryset.filter(member_id=member)
         return queryset
+
+    def get_permissions(self):
+        action_permissions = {
+            'create_loan': CanCreateLoans,
+            'approve': CanApproveLoans,
+            'disburse': CanDisburseLoans,
+            'repay': CanRepayLoans,
+            'cancel': CanCancelLoans,
+        }
+        permission_cls = action_permissions.get(self.action, CanViewLoans)
+        return [IsAuthenticated(), permission_cls()]
 
     def list(self, request):
         queryset = self.filter_queryset(self.get_queryset())

@@ -1,7 +1,7 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
-from apps.identity.permissions import IsSuperUserOrAdministrativeOfficer
+from apps.core.permissions import CanManageOrganization
 
 from .models import Department
 from .serializers import BranchSerializer, DepartmentSerializer, OrganizationSerializer
@@ -19,7 +19,7 @@ class OrganizationViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ('create', 'update', 'partial_update', 'destroy'):
-            return [IsAuthenticated(), IsSuperUserOrAdministrativeOfficer()]
+            return [IsAuthenticated(), CanManageOrganization()]
         return [IsAuthenticated()]
 
     def perform_destroy(self, instance):
@@ -37,7 +37,7 @@ class BranchViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ('create', 'update', 'partial_update', 'destroy'):
-            return [IsAuthenticated(), IsSuperUserOrAdministrativeOfficer()]
+            return [IsAuthenticated(), CanManageOrganization()]
         return [IsAuthenticated()]
 
     def perform_destroy(self, instance):
@@ -59,7 +59,7 @@ class DepartmentViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ('create', 'update', 'partial_update', 'destroy'):
-            return [IsAuthenticated(), IsSuperUserOrAdministrativeOfficer()]
+            return [IsAuthenticated(), CanManageOrganization()]
         return [IsAuthenticated()]
 
     def perform_destroy(self, instance):

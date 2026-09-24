@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.identity.permissions import IsStaffUser
+from apps.core.permissions import CanViewReports
 
 from . import services
 
@@ -22,7 +22,7 @@ _RESPONSES = {
 
 
 class ReportBaseView(APIView):
-    permission_classes = [IsAuthenticated, IsStaffUser]
+    permission_classes = [IsAuthenticated, CanViewReports]
 
 
 @extend_schema(responses=_RESPONSES)

@@ -1,12 +1,14 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
+from apps.core.permissions import CanViewLedger
+
 from .models import Journal, LedgerEntry
 from .serializers import JournalSerializer, LedgerEntrySerializer
 
 
 class JournalViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanViewLedger]
     serializer_class = JournalSerializer
     search_fields = ['journal_no', 'description', 'reference']
     ordering_fields = ['created_at', 'journal_no']
@@ -24,7 +26,7 @@ class JournalViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class LedgerEntryViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanViewLedger]
     serializer_class = LedgerEntrySerializer
     search_fields = ['account__account_no', 'note', 'journal__journal_no']
     ordering_fields = ['journal__created_at']

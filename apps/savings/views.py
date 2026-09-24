@@ -5,7 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
-from apps.identity.permissions import IsSuperUserOrAdministrativeOfficer
+from apps.core.permissions import CanManageProducts, CanOpenSavings, CanViewSavings
+from apps.core.rbac import VIEW_OWN_SAVINGS, VIEW_SAVINGS, has_capability
 from apps.members.models import Member
 
 from . import services
@@ -26,7 +27,7 @@ class SavingsProductViewSet(ModelViewSet):
 
     def get_permissions(self):
         if self.action in ('create', 'update', 'partial_update', 'destroy'):
-            return [IsAuthenticated(), IsSuperUserOrAdministrativeOfficer()]
+            return [IsAuthenticated(), CanManageProducts()]
         return [IsAuthenticated()]
 
     def perform_destroy(self, instance):
@@ -41,10 +42,23 @@ class SavingsAccountViewSet(GenericViewSet):
         queryset = SavingsAccount.objects.select_related(
             'member', 'product', 'account', 'account__balance', 'branch'
         ).filter(status='active')
+        user = self.request.user
+        if (
+            user.is_authenticated
+            and not user.is_superuser
+            and has_capability(user, VIEW_OWN_SAVINGS)
+            and not has_capability(user, VIEW_SAVINGS)
+        ):
+            queryset = queryset.filter(member__user=user)
         member = self.request.query_params.get('member')
         if member:
             queryset = queryset.filter(member_id=member)
         return queryset
+
+    def get_permissions(self):
+        if self.action == 'open':
+            return [IsAuthenticated(), CanOpenSavings()]
+        return [IsAuthenticated(), CanViewSavings()]
 
     def list(self, request):
         queryset = self.filter_queryset(self.get_queryset())

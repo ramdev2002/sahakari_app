@@ -1,14 +1,14 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
-from apps.identity.permissions import IsStaffUser
+from apps.core.permissions import CanViewAuditLogs
 
 from .models import AuditLog
 from .serializers import AuditLogSerializer
 
 
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsAuthenticated, IsStaffUser]
+    permission_classes = [IsAuthenticated, CanViewAuditLogs]
     serializer_class = AuditLogSerializer
 
     def get_queryset(self):
